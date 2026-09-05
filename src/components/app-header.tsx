@@ -8,7 +8,7 @@ export function AppHeader({ quote }: { quote: MarketQuote }) {
     <header className="sticky top-0 z-40 border-b border-border bg-base/90 backdrop-blur">
       <div className="mx-auto flex max-w-[1400px] items-center justify-between px-4 py-3 sm:px-6">
         <div className="flex items-center gap-2.5">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-gold to-goldSoft text-black">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-gold to-goldSoft text-white">
             <Gem size={16} />
           </div>
           <div>

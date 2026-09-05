@@ -4,16 +4,16 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        base: "#ffffff",
-        panel: "#f6f7f9",
-        panel2: "#eef0f4",
-        border: "#d9dee6",
-        gold: "#b8922a",
-        goldSoft: "#c4a35a",
-        buy: "#168a54",
-        sell: "#c43b36",
-        muted: "#5c6573",
-        text: "#12151a",
+        base: "#0b1426",
+        panel: "#111d33",
+        panel2: "#182742",
+        border: "#25365a",
+        gold: "#3b82f6",
+        goldSoft: "#60a5fa",
+        buy: "#22c55e",
+        sell: "#ef4444",
+        muted: "#8ea2c4",
+        text: "#e8eefa",
       },
       fontFamily: {
         sans: ["var(--font-sans)", "sans-serif"],

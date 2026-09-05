@@ -51,7 +51,7 @@ export function SignalHistory({
               type="button"
               onClick={() => setFilter(f)}
               className={`px-2.5 py-1 text-[11px] rounded-md font-medium ${
-                filter === f ? "bg-gold text-black" : "text-muted hover:text-text"
+                filter === f ? "bg-gold text-white" : "text-muted hover:text-text"
               }`}
             >
               {f}

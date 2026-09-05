@@ -45,7 +45,7 @@ export function GenerateSignalButton({ label = "Genera segnale ORB" }: { label?:
 
   return (
     <div className="space-y-2">
-      <button onClick={run} disabled={busy} className="w-full rounded-lg bg-gold text-black font-semibold py-2 disabled:opacity-50">
+      <button onClick={run} disabled={busy} className="w-full rounded-lg bg-gold text-white font-semibold py-2 disabled:opacity-50">
         {busy ? "Analisi ORB…" : label}
       </button>
       {msg && <p className="text-xs text-muted">{msg}</p>}

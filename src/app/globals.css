@@ -8,14 +8,14 @@
 }
 
 html {
-  color-scheme: light;
+  color-scheme: dark;
 }
 
 body {
-  background-color: #ffffff;
-  color: #12151a;
+  background-color: #0b1426;
+  color: #e8eefa;
 }
 
 ::selection {
-  background: rgba(212, 175, 90, 0.35);
+  background: rgba(59, 130, 246, 0.35);
 }

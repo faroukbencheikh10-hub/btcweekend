@@ -32,7 +32,7 @@ export function NotificationBell() {
           <p className="text-sm font-medium text-text mb-2">Notifiche ORB</p>
           {status === "granted" && <p className="text-xs text-buy">Notifiche attive</p>}
           {status === "default" && (
-            <button onClick={handleEnable} className="w-full rounded-lg bg-gold text-black text-xs font-semibold py-2">Attiva notifiche</button>
+            <button onClick={handleEnable} className="w-full rounded-lg bg-gold text-white text-xs font-semibold py-2">Attiva notifiche</button>
           )}
           {status === "denied" && <p className="text-xs text-sell">Permesso negato</p>}
           {status === "unsupported" && <p className="text-xs text-muted">Push non supportate</p>}

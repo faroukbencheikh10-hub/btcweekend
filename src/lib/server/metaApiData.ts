@@ -1,6 +1,6 @@
-const TOKEN = process.env.METAAPI_TOKEN;
-const ACCOUNT_ID = process.env.METAAPI_ACCOUNT_ID;
-const SYMBOL = process.env.METAAPI_SYMBOL || process.env.METAAPI_SYMBOL_BTCUSD || "BTCUSD";
+const TOKEN = process.env.METAAPI_TOKEN?.trim();
+const ACCOUNT_ID = process.env.METAAPI_ACCOUNT_ID?.trim();
+const SYMBOL = (process.env.METAAPI_SYMBOL || process.env.METAAPI_SYMBOL_BTCUSD || "BTCUSD").trim();
 const RAW_REGION = process.env.METAAPI_REGION;
 
 function regionCandidates(): string[] {
