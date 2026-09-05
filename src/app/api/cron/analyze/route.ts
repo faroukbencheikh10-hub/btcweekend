@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { runTrendAnalysis as runAnalysis } from "@/lib/server/runTrendAnalysis";
+import { ensureSchema, isMetaApiEnabled } from "@/lib/server/db";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -18,6 +19,11 @@ export async function GET(req: NextRequest) {
   }
 
   try {
+    await ensureSchema();
+    if (!(await isMetaApiEnabled())) {
+      return NextResponse.json({ skipped: "metaapi_paused" });
+    }
+
     const btc = await runAnalysis();
     return NextResponse.json({ ok: true, ...btc });
   } catch (err) {

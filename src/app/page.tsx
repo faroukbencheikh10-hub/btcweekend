@@ -1,6 +1,7 @@
 import { AppHeader } from "@/components/app-header";
 import { ChartPanel } from "@/components/chart-panel";
 import { GenerateSignalButton } from "@/components/generate-signal-button";
+import { MetaApiToggle } from "@/components/metaapi-toggle";
 import { SignalPanel } from "@/components/signal-panel";
 import { SignalHistory } from "@/components/signal-history";
 import { PerformanceStatsPanel } from "@/components/performance-stats";
@@ -67,6 +68,7 @@ export default async function Home() {
       <main className="mx-auto max-w-[1100px] px-4 py-6 space-y-4">
         <ChartPanel />
         <GenerateSignalButton label="Genera segnale ORB" />
+        <MetaApiToggle />
         <SignalPanel signal={current} />
         <SignalHistory signals={rows} />
         <PerformanceStatsPanel stats={stats} />

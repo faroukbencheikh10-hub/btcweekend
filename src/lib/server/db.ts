@@ -82,6 +82,13 @@ export async function ensureSchema() {
       key TEXT PRIMARY KEY,
       value TEXT NOT NULL
     );
+    CREATE TABLE IF NOT EXISTS settings (
+      key TEXT PRIMARY KEY,
+      value TEXT
+    );
+    INSERT INTO settings (key, value)
+    VALUES ('metaapi_enabled', 'true')
+    ON CONFLICT (key) DO NOTHING;
   `);
 }
 
@@ -157,6 +164,26 @@ export async function getLatestMarketSnapshot() {
 export async function getLatestContextSnapshot() {
   const res = await getPool().query(`SELECT * FROM context_snapshots ORDER BY created_at DESC LIMIT 1`);
   return res.rows[0] ?? null;
+}
+
+export async function getKvSetting(key: string): Promise<string | null> {
+  const res = await getPool().query(`SELECT value FROM settings WHERE key = $1`, [key]);
+  return res.rows[0]?.value ?? null;
+}
+export async function setKvSetting(key: string, value: string) {
+  await getPool().query(
+    `INSERT INTO settings (key, value) VALUES ($1,$2) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value`,
+    [key, value]
+  );
+}
+export async function isMetaApiEnabled(): Promise<boolean> {
+  const value = await getKvSetting("metaapi_enabled");
+  return value !== "false";
+}
+export async function toggleMetaApiEnabled(): Promise<boolean> {
+  const next = (await isMetaApiEnabled()) ? "false" : "true";
+  await setKvSetting("metaapi_enabled", next);
+  return next === "true";
 }
 
 export async function getSetting(key: string): Promise<string | null> {
