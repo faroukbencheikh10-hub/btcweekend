@@ -136,6 +136,35 @@ function scegliBox(prima: Bar[], sg: Soglie): { high: number; low: number; size:
   return candidati[0];
 }
 
+function ordinaTarget(
+  direzione: DirezioneTrade,
+  entry: number,
+  tp1: number,
+  tp2: number
+): { tp1: number; tp2: number } {
+  let a = Number(tp1);
+  let b = Number(tp2);
+  if (!Number.isFinite(a) || !Number.isFinite(b)) return { tp1, tp2 };
+  if (direzione === "BUY") {
+    if (a > b) [a, b] = [b, a];
+    if (!(entry < a && a < b)) {
+      const near = Math.min(a, b);
+      const far = Math.max(a, b);
+      a = near > entry ? near : Number((entry + Math.abs(far - entry) * 0.6).toFixed(2));
+      b = far > a ? far : Number((a + Math.max(0.01, Math.abs(a - entry) * 0.4)).toFixed(2));
+    }
+  } else {
+    if (a < b) [a, b] = [b, a];
+    if (!(entry > a && a > b)) {
+      const near = Math.max(a, b);
+      const far = Math.min(a, b);
+      a = near < entry ? near : Number((entry - Math.abs(entry - far) * 0.6).toFixed(2));
+      b = far < a ? far : Number((a - Math.max(0.01, Math.abs(entry - a) * 0.4)).toFixed(2));
+    }
+  }
+  return { tp1: Number(a.toFixed(2)), tp2: Number(b.toFixed(2)) };
+}
+
 function livelli(
   direzione: DirezioneTrade,
   entry: number,
@@ -148,20 +177,32 @@ function livelli(
   const en = Number(entry.toFixed(2));
   const rischio = Math.abs(en - sl);
   if (rischio < rischioMin) return null;
-  const tp1 =
-    direzione === "BUY" ? Number((en + tp1Dist).toFixed(2)) : Number((en - tp1Dist).toFixed(2));
-  const tp2 =
-    direzione === "BUY" ? Number((en + tp2Dist).toFixed(2)) : Number((en - tp2Dist).toFixed(2));
-  const rr = Number((Math.abs(tp1 - en) / rischio).toFixed(2));
+  let dist1 = Number(tp1Dist);
+  let dist2 = Number(tp2Dist);
+  if (!Number.isFinite(dist1) || !Number.isFinite(dist2) || dist1 <= 0) return null;
+  if (dist2 <= dist1) dist2 = Number((dist1 * 1.4).toFixed(2));
+  const rawTp1 = direzione === "BUY" ? Number((en + dist1).toFixed(2)) : Number((en - dist1).toFixed(2));
+  const rawTp2 = direzione === "BUY" ? Number((en + dist2).toFixed(2)) : Number((en - dist2).toFixed(2));
+  const ordered = ordinaTarget(direzione, en, rawTp1, rawTp2);
+  const rr = Number((Math.abs(ordered.tp1 - en) / rischio).toFixed(2));
   if (rr < MIN_RR) return null;
-  if (direzione === "BUY" && !(sl < en && en < tp1)) return null;
-  if (direzione === "SELL" && !(tp1 < en && en < sl)) return null;
-  return { stopLoss: sl, tp1, tp2, rr };
+  if (direzione === "BUY" && !(sl < en && en < ordered.tp1 && ordered.tp1 < ordered.tp2)) return null;
+  if (direzione === "SELL" && !(ordered.tp2 < ordered.tp1 && ordered.tp1 < en && en < sl)) return null;
+  return { stopLoss: sl, tp1: ordered.tp1, tp2: ordered.tp2, rr };
 }
 
 function orbTargets(rischio: number, sg: Soglie): { tp1: number; tp2: number } {
-  const tp1 = Math.max(sg.tp1Min, Number((rischio * 1.6).toFixed(2)));
-  const tp2 = Math.min(sg.tp2Max, Math.max(sg.tp2Min, Number((rischio * 2.4).toFixed(2))));
+  // TP1 = max(minimo %, 1.6R). TP2 = clip(2.4R, [tp2Min, tp2Max]).
+  // Se il rischio è largo, 1.6R può superare il cap di TP2: in quel caso
+  // accorciamo TP1 sotto TP2 invece di invertire i target.
+  let tp1 = Math.max(sg.tp1Min, Number((rischio * 1.6).toFixed(2)));
+  let tp2 = Math.min(sg.tp2Max, Math.max(sg.tp2Min, Number((rischio * 2.4).toFixed(2))));
+  if (tp2 <= tp1) {
+    tp1 = Number(Math.min(tp1, Math.max(sg.tp1Min, tp2 * (1.6 / 2.4))).toFixed(2));
+    if (tp2 <= tp1) {
+      tp1 = Number((tp2 * 0.75).toFixed(2));
+    }
+  }
   return { tp1, tp2 };
 }
 
