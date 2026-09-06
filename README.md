@@ -19,3 +19,13 @@ e' la stessa qualunque sia il prezzo di ETH.
 
 Il simbolo e' letto da `METAAPI_SYMBOL` (default `ETHUSD`).
 Il database usa le stesse tabelle di Soldi: la colonna `xauusd` contiene il prezzo del simbolo configurato.
+
+### Chiusura trade
+
+Ad ogni `/api/cron/analyze` (all'inizio, anche se non nasce un nuovo segnale) gli aperti
+vengono chiusi scorrendo le candele M5 da `attivato_il`/`created_at`, non sul prezzo corrente.
+Stessa candela SL+TP → LOSS. `closed_at` = datetime della candela che ha chiuso.
+
+`SPREAD_BUFFER_PCT` (default `0.05`, cioè 0.05% del prezzo) allarga solo lo SL:
+BUY chiude in LOSS se `low <= SL + buffer`, SELL se `high >= SL - buffer`. I TP restano invariati.
+Se le candele MetaApi sono Bid, il buffer simula l'Ask sui SELL e uno stop più facile sui BUY.
