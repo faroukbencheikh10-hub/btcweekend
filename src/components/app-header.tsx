@@ -1,5 +1,6 @@
 import { Gem } from "lucide-react";
 import { MarketQuote } from "@/lib/types";
+import { APP_NAME, getTradingSymbol } from "@/lib/symbol";
 import { PriceTicker } from "./price-ticker";
 import { NotificationBell } from "./notification-bell";
 
@@ -12,8 +13,8 @@ export function AppHeader({ quote }: { quote: MarketQuote }) {
             <Gem size={16} />
           </div>
           <div>
-            <div className="text-sm font-semibold text-text leading-none">BTC Weekend</div>
-            <div className="text-[11px] text-muted leading-none mt-0.5">BTCUSD · ORB M5 · weekend · niente ICT, niente AI</div>
+            <div className="text-sm font-semibold text-text leading-none">{APP_NAME}</div>
+            <div className="text-[11px] text-muted leading-none mt-0.5">{getTradingSymbol()} · ORB M5 · weekend · niente ICT, niente AI</div>
           </div>
         </div>
         <div className="flex items-center gap-4">

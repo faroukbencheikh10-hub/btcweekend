@@ -6,7 +6,7 @@ export const dynamic = "force-dynamic";
 export async function POST() {
   try {
     const result = await sendPushToAll({
-      title: "Notifica di prova — BTC Weekend",
+      title: "Notifica di prova — ETH Weekend",
       body: "Se vedi questo, le notifiche push funzionano.",
       url: "/",
       tag: "test-notification",

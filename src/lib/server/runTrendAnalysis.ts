@@ -6,6 +6,7 @@ import { validateSignal } from "@/lib/server/validateSignal";
 import { valutaSetupTrend } from "@/lib/server/trendStrategy";
 import { sendPushToAll } from "@/lib/server/pushSend";
 import { chiamaSeAttivo } from "@/lib/server/twilioCall";
+import { getTradingSymbol } from "@/lib/symbol";
 
 export async function runTrendAnalysis(options?: { force?: boolean }) {
   const force = options?.force ?? false;
@@ -108,13 +109,14 @@ export async function runTrendAnalysis(options?: { force?: boolean }) {
 
   if (signal.direction === "BUY" || signal.direction === "SELL") {
     const prezzoTesto = Number(marketSnapshot.xauusd).toFixed(2);
+    const symbol = getTradingSymbol();
     sendPushToAll({
-      title: `${signal.direction} · BTC ORB · ${prezzoTesto}`,
+      title: `${signal.direction} · ${symbol} ORB · ${prezzoTesto}`,
       body: `Entry ${Number(signal.entry).toFixed(2)} · SL ${Number(signal.stopLoss).toFixed(2)} · TP1 ${Number(signal.tp1).toFixed(2)} · TP2 ${Number(signal.tp2).toFixed(2)}`,
       url: "/",
     }).catch(() => undefined);
     chiamaSeAttivo(
-      `Segnale ${signal.direction === "BUY" ? "acquisto" : "vendita"} su bitcoin. Entrata ${Number(signal.entry).toFixed(2)}. Stop ${Number(signal.stopLoss).toFixed(2)}.`,
+      `Segnale ${signal.direction === "BUY" ? "acquisto" : "vendita"} su ${symbol}. Entrata ${Number(signal.entry).toFixed(2)}. Stop ${Number(signal.stopLoss).toFixed(2)}.`,
     ).catch(() => undefined);
   }
 

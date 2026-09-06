@@ -1,7 +1,7 @@
 import { computeATR } from "./atr";
 import { metaApiFetchQuote, metaApiFetchM5 } from "./metaApiData";
 
-// Bitcoin quota 24 ore su 24, 7 giorni su 7: nessun mercato chiuso.
+// ETH quota 24 ore su 24, 7 giorni su 7: nessun mercato chiuso.
 // Se SOLO_WEEKEND=true l'app lavora solo quando l'oro e' chiuso
 // (venerdi 21:00 UTC -> domenica 22:00 UTC), cioe' quando "soldi" dorme.
 function finestraWeekend(d = new Date()) {
@@ -26,16 +26,16 @@ export async function getCurrentPrice(): Promise<number | null> {
 
 export async function getMarketSnapshot() {
   const [quote, m5] = await Promise.all([metaApiFetchQuote(), metaApiFetchM5(80)]);
-  const btcusd = quote?.close ?? Number(m5[0]?.close) ?? 0;
+  const prezzo = quote?.close ?? Number(m5[0]?.close) ?? 0;
   const primaChiusura = Number(m5[m5.length - 1]?.close);
   const changePct =
-    Number.isFinite(primaChiusura) && primaChiusura > 0 && btcusd > 0
-      ? Number((((btcusd - primaChiusura) / primaChiusura) * 100).toFixed(3))
+    Number.isFinite(primaChiusura) && primaChiusura > 0 && prezzo > 0
+      ? Number((((prezzo - primaChiusura) / primaChiusura) * 100).toFixed(3))
       : 0;
   return {
     // Il campo si chiama ancora "xauusd" nel database per non cambiare lo schema:
-    // per questo progetto contiene il prezzo BTCUSD.
-    xauusd: btcusd,
+    // per questo progetto contiene il prezzo del simbolo configurato (METAAPI_SYMBOL).
+    xauusd: prezzo,
     xauusdChangePct: changePct,
     dxy: null,
     dxyChangePct: null,

@@ -24,10 +24,10 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ skipped: "metaapi_paused" });
     }
 
-    const btc = await runAnalysis();
-    return NextResponse.json({ ok: true, ...btc });
+    const result = await runAnalysis();
+    return NextResponse.json({ ok: true, ...result });
   } catch (err) {
-    console.error("[cron/analyze] errore btc:", err);
+    console.error("[cron/analyze] errore:", err);
     return NextResponse.json(
       { ok: false, error: err instanceof Error ? err.message : "Errore sconosciuto" },
       { status: 500 }

@@ -1,11 +1,14 @@
-// ORB sul grafico M5 su BTCUSD, 24/7. Niente ICT, niente AI, niente filtri orari.
+// ORB sul grafico M5 sul simbolo configurato (METAAPI_SYMBOL), 24/7.
+// Niente ICT, niente AI, niente filtri orari.
 // Trova il box delle candele precedenti e entra sulla chiusura fuori.
 //
 // Le soglie erano in dollari fissi tarate sull'oro (~4400$): 5-18$ di box,
 // 8$ di inseguimento massimo, 20$ di candela shock, TP1 12$, TP2 20-30$.
-// Sul bitcoin il prezzo e' su un'altra scala, quindi qui le stesse soglie
+// Su ETH/crypto il prezzo e' su un'altra scala, quindi qui le stesse soglie
 // sono espresse in PERCENTUALE del prezzo e ricalcolate ad ogni ciclo,
 // cosi' la logica resta identica a quella dell'oro qualunque sia il prezzo.
+
+import { getTradingSymbol } from "@/lib/symbol";
 
 export type DirezioneTrade = "BUY" | "SELL";
 export type SetupNome = "orb";
@@ -170,7 +173,7 @@ export function valutaSetupTrend(input: {
   candles?: { "5m"?: Candle[]; "15m"?: Candle[]; "1h"?: Candle[]; "4h"?: Candle[] } | null;
 }): SetupTrend {
   const prezzo = n(input.prezzo);
-  if (!Number.isFinite(prezzo) || prezzo <= 0) return no("Prezzo BTCUSD non disponibile.");
+  if (!Number.isFinite(prezzo) || prezzo <= 0) return no(`Prezzo ${getTradingSymbol()} non disponibile.`);
   const sg = soglieDaPrezzo(prezzo);
 
   const m5 = chiuseCronologiche(input.candles?.["5m"]);

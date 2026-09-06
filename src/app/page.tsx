@@ -7,6 +7,7 @@ import { SignalHistory } from "@/components/signal-history";
 import { PerformanceStatsPanel } from "@/components/performance-stats";
 import { getLatestMarketSnapshot, getLatestSignal, getSignalHistory, getStats } from "@/lib/server/db";
 import { MarketQuote, TradeSignal, PerformanceStats } from "@/lib/types";
+import { getSymbolLabel, getTradingSymbol } from "@/lib/symbol";
 
 export const dynamic = "force-dynamic";
 
@@ -52,8 +53,8 @@ export default async function Home() {
   };
 
   const quote: MarketQuote = {
-    symbol: "BTCUSD",
-    label: "Bitcoin / USD",
+    symbol: getTradingSymbol(),
+    label: getSymbolLabel(),
     price: snap?.xauusd != null ? Number(snap.xauusd) : null,
     changePercent: snap?.xauusd_change_pct != null ? Number(snap.xauusd_change_pct) : null,
     status: snap ? "live" : "disconnected",
@@ -66,7 +67,7 @@ export default async function Home() {
     <div className="min-h-screen">
       <AppHeader quote={quote} />
       <main className="mx-auto max-w-[1100px] px-4 py-6 space-y-4">
-        <ChartPanel />
+        <ChartPanel symbol={quote.symbol} />
         <GenerateSignalButton label="Genera segnale ORB" />
         <MetaApiToggle />
         <SignalPanel signal={current} />

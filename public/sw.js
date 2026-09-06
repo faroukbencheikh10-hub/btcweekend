@@ -9,10 +9,10 @@ self.addEventListener("push", (event) => {
   try {
     data = event.data ? event.data.json() : {};
   } catch {
-    data = { title: "BTC Weekend", body: event.data ? event.data.text() : "Nuovo segnale" };
+    data = { title: "ETH Weekend", body: event.data ? event.data.text() : "Nuovo segnale" };
   }
   event.waitUntil(
-    self.registration.showNotification(data.title || "BTC Weekend", {
+    self.registration.showNotification(data.title || "ETH Weekend", {
       body: data.body || "Nuovo segnale disponibile",
       icon: "/icon-192.png",
       badge: "/icon-192.png",
