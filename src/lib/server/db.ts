@@ -214,8 +214,47 @@ export async function getSegnaleAttivo() {
   );
   return res.rows[0] ?? null;
 }
-export async function closeSignal(id: string, outcome: "WIN" | "LOSS" | "BREAKEVEN", resultR: number) {
-  await getPool().query(`UPDATE signals SET outcome = $2, result_r = $3, closed_at = now() WHERE id = $1`, [id, outcome, resultR]);
+export async function getSegnaliAperti() {
+  const res = await getPool().query(
+    `SELECT * FROM signals
+     WHERE is_demo = false
+       AND direction IN ('BUY','SELL')
+       AND outcome IS NULL
+     ORDER BY COALESCE(attivato_il, created_at) ASC`
+  );
+  return res.rows as Array<{
+    id: string;
+    direction: string;
+    entry: number;
+    stop_loss: number;
+    tp1: number;
+    tp2: number;
+    risk_reward: number;
+    reasoning: string;
+    created_at: string;
+    attivato_il: string | null;
+  }>;
+}
+export async function closeSignal(
+  id: string,
+  outcome: "WIN" | "LOSS" | "BREAKEVEN",
+  resultR: number,
+  closedAt?: Date | string | null,
+  closeNote?: string | null
+) {
+  const closedAtIso = closedAt ? new Date(closedAt).toISOString() : null;
+  await getPool().query(
+    `UPDATE signals
+     SET outcome = $2,
+         result_r = $3,
+         closed_at = COALESCE($4::timestamptz, now()),
+         reasoning = CASE
+           WHEN $5::text IS NULL OR $5 = '' THEN reasoning
+           ELSE reasoning || E'\n' || $5
+         END
+     WHERE id = $1`,
+    [id, outcome, resultR, closedAtIso, closeNote ?? null]
+  );
 }
 export async function getStats() {
   const res = await getPool().query(
