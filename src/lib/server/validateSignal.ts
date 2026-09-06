@@ -48,7 +48,7 @@ export function validateSignal(raw: RawSignal, atrField: "atr15m" | "atr5m" = "a
     return { ...raw, direction: "NO_TRADE" };
   }
 
-  const { entry, stopLoss, tp1 } = raw;
+  let { entry, stopLoss, tp1, tp2 } = raw;
 
   if (entry === null || stopLoss === null || tp1 === null) {
     return {
@@ -69,8 +69,33 @@ export function validateSignal(raw: RawSignal, atrField: "atr15m" | "atr5m" = "a
   const stopAtrRatio =
     atr !== null && atr > 0 ? Number((stopDistance / atr).toFixed(2)) : null;
 
-  const validBuy = normalized === "BUY" && stopLoss < entry && entry < tp1;
-  const validSell = normalized === "SELL" && tp1 < entry && entry < stopLoss;
+  if (tp2 != null && Number.isFinite(Number(tp2))) {
+    const a = Number(tp1);
+    const b = Number(tp2);
+    if (normalized === "BUY" && b < a) {
+      tp1 = b;
+      tp2 = a;
+    } else if (normalized === "SELL" && b > a) {
+      tp1 = b;
+      tp2 = a;
+    }
+  }
+
+  if (normalized === "BUY" && tp1 != null && tp2 != null && !(entry < Number(tp1) && Number(tp1) < Number(tp2))) {
+    const near = Math.min(Number(tp1), Number(tp2));
+    const far = Math.max(Number(tp1), Number(tp2));
+    tp1 = near;
+    tp2 = far;
+  }
+  if (normalized === "SELL" && tp1 != null && tp2 != null && !(entry > Number(tp1) && Number(tp1) > Number(tp2))) {
+    const near = Math.max(Number(tp1), Number(tp2));
+    const far = Math.min(Number(tp1), Number(tp2));
+    tp1 = near;
+    tp2 = far;
+  }
+
+  const validBuy = normalized === "BUY" && stopLoss < entry && entry < Number(tp1);
+  const validSell = normalized === "SELL" && Number(tp1) < entry && entry < stopLoss;
 
   if (normalized === "BUY" && !validBuy) {
     return {
@@ -127,5 +152,5 @@ export function validateSignal(raw: RawSignal, atrField: "atr15m" | "atr5m" = "a
     };
   }
 
-  return { ...raw, direction: normalized, riskReward, stopAtrRatio };
+  return { ...raw, direction: normalized, tp1, tp2, riskReward, stopAtrRatio };
 }
