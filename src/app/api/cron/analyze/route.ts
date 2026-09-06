@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { runTrendAnalysis as runAnalysis } from "@/lib/server/runTrendAnalysis";
-import { ensureSchema, isMetaApiEnabled } from "@/lib/server/db";
+import { ensureSchema, isMetaApiEnabled, insertMarketSnapshot } from "@/lib/server/db";
 import { resolveOpenTrades } from "@/lib/server/resolveOpenTrades";
+import { getMarketSnapshot } from "@/lib/server/marketData";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -21,14 +22,36 @@ export async function GET(req: NextRequest) {
 
   try {
     await ensureSchema();
-    // Esito dei trade aperti: ad ogni cron, prima di cercare nuovi segnali.
-    const chiusure = await resolveOpenTrades();
     if (!(await isMetaApiEnabled())) {
-      return NextResponse.json({ skipped: "metaapi_paused", chiusure });
+      // Anche in pausa: snapshot + esito sugli aperti, niente nuovi segnali.
+      let snapshot_saved = false;
+      try {
+        const snap = await getMarketSnapshot();
+        await insertMarketSnapshot(snap);
+        snapshot_saved = true;
+      } catch (err) {
+        console.error("[cron/analyze] snapshot in pausa fallito:", err);
+      }
+      const chiusure = await resolveOpenTrades();
+      return NextResponse.json({
+        skipped: "metaapi_paused",
+        open_signals: chiusure.stillOpen,
+        checked: chiusure.checked,
+        closed: chiusure.closed,
+        snapshot_saved,
+        chiusure,
+      });
     }
 
     const result = await runAnalysis();
-    return NextResponse.json({ ok: true, ...result });
+    return NextResponse.json({
+      ok: true,
+      open_signals: result.open_signals ?? 0,
+      checked: result.checked ?? 0,
+      closed: result.closed ?? [],
+      snapshot_saved: Boolean(result.snapshot_saved),
+      ...result,
+    });
   } catch (err) {
     console.error("[cron/analyze] errore:", err);
     return NextResponse.json(

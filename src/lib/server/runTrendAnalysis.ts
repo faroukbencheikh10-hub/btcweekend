@@ -9,14 +9,42 @@ import { chiamaSeAttivo } from "@/lib/server/twilioCall";
 import { getTradingSymbol } from "@/lib/symbol";
 import { resolveOpenTrades } from "@/lib/server/resolveOpenTrades";
 
+type Chiusure = Awaited<ReturnType<typeof resolveOpenTrades>>;
+
+function cronFields(chiusure: Chiusure, snapshotSaved: boolean, extra: Record<string, unknown> = {}) {
+  return {
+    open_signals: chiusure.stillOpen,
+    checked: chiusure.checked,
+    closed: chiusure.closed,
+    snapshot_saved: snapshotSaved,
+    chiusure,
+    ...extra,
+  };
+}
+
 export async function runTrendAnalysis(_options?: { force?: boolean }) {
   await ensureSchema();
 
-  // Sempre, all'inizio: chiudi gli aperti sulle candele M5 (non sul prezzo spot).
+  let snapshotSaved = false;
+  let marketSnapshot: Awaited<ReturnType<typeof getMarketSnapshot>> | null = null;
+  try {
+    marketSnapshot = await getMarketSnapshot();
+    await insertMarketSnapshot(marketSnapshot);
+    snapshotSaved = true;
+  } catch (err) {
+    console.error("[runTrendAnalysis] snapshot non salvato:", err);
+    snapshotSaved = false;
+  }
+
+  // Sempre, dopo lo snapshot: chiudi gli aperti sulle candele M5 (non sul prezzo spot).
   const chiusure = await resolveOpenTrades();
 
   if (!isMarketOpen()) {
-    return { skipped: true, reason: "fuori_finestra_weekend", chiusure };
+    return cronFields(chiusure, snapshotSaved, {
+      skipped: true,
+      reason: "fuori_finestra_weekend",
+      xauusd: marketSnapshot?.xauusd ?? null,
+    });
   }
 
   const latest = await getSegnaleAttivo();
@@ -24,17 +52,26 @@ export async function runTrendAnalysis(_options?: { force?: boolean }) {
     latest && (latest.direction === "BUY" || latest.direction === "SELL") && !latest.outcome;
 
   if (aperto && latest) {
-    return {
+    return cronFields(chiusure, snapshotSaved, {
       skipped: true,
       reason: "signal_active",
       activeSignalId: latest.id,
       direction: latest.direction,
-      chiusure,
-    };
+      xauusd: marketSnapshot?.xauusd ?? null,
+    });
   }
 
-  const marketSnapshot = await getMarketSnapshot();
-  await insertMarketSnapshot(marketSnapshot).catch(() => undefined);
+  if (!marketSnapshot) {
+    try {
+      marketSnapshot = await getMarketSnapshot();
+    } catch (err) {
+      return cronFields(chiusure, snapshotSaved, {
+        skipped: true,
+        reason: "snapshot_unavailable",
+        error: err instanceof Error ? err.message : "snapshot_unavailable",
+      });
+    }
+  }
 
   const [news, calendar] = await Promise.all([
     getRelevantNews().catch(() => []),
@@ -58,7 +95,13 @@ export async function runTrendAnalysis(_options?: { force?: boolean }) {
       reasoning: "Notizia ad alto impatto entro 30 minuti. Nessun trade.",
     });
     const saved = await insertSignal(skipped);
-    return { signalId: saved.id, direction: "NO_TRADE", rejectedReason: skipped.reasoning, newsCount: news.length };
+    return cronFields(chiusure, snapshotSaved, {
+      signalId: saved.id,
+      direction: "NO_TRADE",
+      rejectedReason: skipped.reasoning,
+      newsCount: news.length,
+      xauusd: marketSnapshot.xauusd,
+    });
   }
 
   const setup = valutaSetupTrend({
@@ -106,7 +149,7 @@ export async function runTrendAnalysis(_options?: { force?: boolean }) {
     ).catch(() => undefined);
   }
 
-  return {
+  return cronFields(chiusure, snapshotSaved, {
     signalId: saved.id,
     direction: signal.direction,
     confidence: signal.confidence,
@@ -117,5 +160,5 @@ export async function runTrendAnalysis(_options?: { force?: boolean }) {
     rejectedReason: signal.rejectedReason ?? (!setup.ok ? setup.motivo : null),
     newsCount: news.length,
     calendarCount: calendar.length,
-  };
+  });
 }
