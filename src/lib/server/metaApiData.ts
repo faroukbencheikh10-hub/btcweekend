@@ -92,12 +92,14 @@ export async function metaApiFetchQuote(symbol: string = SYMBOL): Promise<{
 
 const HA_OFFSET = /(?:Z|[+-]\d{2}:?\d{2})$/;
 
-export async function metaApiFetchM5(outputsize = 80, symbol: string = SYMBOL) {
+export async function metaApiFetchM5(outputsize = 80, symbol: string = SYMBOL, startTime?: string) {
   try {
     assertConfigured();
+    const limit = Math.min(Math.max(Number(outputsize) || 80, 1), 1000);
+    const startQs = startTime ? `&startTime=${encodeURIComponent(startTime)}` : "";
     const data = (await metaApiGetWithRegion(
       (region) =>
-        `${marketDataApiBase(region)}/users/current/accounts/${ACCOUNT_ID}/historical-market-data/symbols/${symbol}/timeframes/5m/candles?limit=${outputsize}`
+        `${marketDataApiBase(region)}/users/current/accounts/${ACCOUNT_ID}/historical-market-data/symbols/${symbol}/timeframes/5m/candles?limit=${limit}${startQs}`
     )) as Array<{ time: string; open: number; high: number; low: number; close: number }>;
     if (!Array.isArray(data) || data.length === 0) return [];
     const candles = [];

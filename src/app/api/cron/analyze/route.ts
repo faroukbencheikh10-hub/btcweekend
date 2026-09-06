@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { runTrendAnalysis as runAnalysis } from "@/lib/server/runTrendAnalysis";
 import { ensureSchema, isMetaApiEnabled } from "@/lib/server/db";
+import { resolveOpenTrades } from "@/lib/server/resolveOpenTrades";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -20,8 +21,10 @@ export async function GET(req: NextRequest) {
 
   try {
     await ensureSchema();
+    // Esito dei trade aperti: ad ogni cron, prima di cercare nuovi segnali.
+    const chiusure = await resolveOpenTrades();
     if (!(await isMetaApiEnabled())) {
-      return NextResponse.json({ skipped: "metaapi_paused" });
+      return NextResponse.json({ skipped: "metaapi_paused", chiusure });
     }
 
     const result = await runAnalysis();

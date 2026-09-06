@@ -1,5 +1,5 @@
-import { ensureSchema, insertSignal, insertMarketSnapshot, getSegnaleAttivo, closeSignal } from "@/lib/server/db";
-import { getMarketSnapshot, getCurrentPrice, isMarketOpen } from "@/lib/server/marketData";
+import { ensureSchema, insertSignal, insertMarketSnapshot, getSegnaleAttivo } from "@/lib/server/db";
+import { getMarketSnapshot, isMarketOpen } from "@/lib/server/marketData";
 import { getRelevantNews } from "@/lib/server/news";
 import { getEconomicCalendar } from "@/lib/server/calendar";
 import { validateSignal } from "@/lib/server/validateSignal";
@@ -7,44 +7,30 @@ import { valutaSetupTrend } from "@/lib/server/trendStrategy";
 import { sendPushToAll } from "@/lib/server/pushSend";
 import { chiamaSeAttivo } from "@/lib/server/twilioCall";
 import { getTradingSymbol } from "@/lib/symbol";
+import { resolveOpenTrades } from "@/lib/server/resolveOpenTrades";
 
-export async function runTrendAnalysis(options?: { force?: boolean }) {
-  const force = options?.force ?? false;
+export async function runTrendAnalysis(_options?: { force?: boolean }) {
+  await ensureSchema();
+
+  // Sempre, all'inizio: chiudi gli aperti sulle candele M5 (non sul prezzo spot).
+  const chiusure = await resolveOpenTrades();
 
   if (!isMarketOpen()) {
-    return { skipped: true, reason: "fuori_finestra_weekend" };
+    return { skipped: true, reason: "fuori_finestra_weekend", chiusure };
   }
-
-  await ensureSchema();
 
   const latest = await getSegnaleAttivo();
   const aperto =
     latest && (latest.direction === "BUY" || latest.direction === "SELL") && !latest.outcome;
 
   if (aperto && latest) {
-    const prezzo = await getCurrentPrice();
-    const entry = Number(latest.entry);
-    const stopLoss = Number(latest.stop_loss);
-    const tp1 = Number(latest.tp1);
-    const risk = Math.abs(entry - stopLoss);
-
-    if (prezzo !== null && risk > 0) {
-      const hitStop = latest.direction === "BUY" ? prezzo <= stopLoss : prezzo >= stopLoss;
-      const hitTp = latest.direction === "BUY" ? prezzo >= tp1 : prezzo <= tp1;
-      if (hitStop || hitTp) {
-        await closeSignal(latest.id, hitStop ? "LOSS" : "WIN", hitStop ? -1 : Math.abs(tp1 - entry) / risk);
-      } else if (!force) {
-        return {
-          skipped: true,
-          reason: "signal_active",
-          activeSignalId: latest.id,
-          direction: latest.direction,
-          currentPrice: prezzo,
-        };
-      }
-    } else if (!force) {
-      return { skipped: true, reason: "signal_active", activeSignalId: latest.id };
-    }
+    return {
+      skipped: true,
+      reason: "signal_active",
+      activeSignalId: latest.id,
+      direction: latest.direction,
+      chiusure,
+    };
   }
 
   const marketSnapshot = await getMarketSnapshot();
